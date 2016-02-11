@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # coding: utf-8 -*-
 
-# Copyright (c) 2016 Red Hat 
+# Copyright (c) 2016 Red Hat
 #
 # This module is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 
 try:
-    from foreman.client import Foreman 
+    from foreman.client import Foreman
     HAS_REQS = True
 except ImportError:
     HAS_REQS = False
@@ -29,7 +29,7 @@ DOCUMENTATION = '''
 module: foreman_host
 short_description: Create/Delete Hosts in foreman
 version_added: "2.0"
-author: "Alfredo Moralejo (amoralej@redhat.com)"
+author: "Alfredo Moralejo (amoralej)"
 description:
    - Create or Remove hosts in foreman
 options:
@@ -89,7 +89,7 @@ options:
      required: false
    compute_resource:
      description:
-        - The compute resource name used to deploy the host 
+        - The compute resource name used to deploy the host
      required: false
    compute_profile:
      description:
@@ -98,12 +98,12 @@ options:
      required: false
    host_parameters_attributes:
      description:
-        - List of parameters to set for host. It must be a list of dictionaries 
+        - List of parameters to set for host. It must be a list of dictionaries
           with keys "name" and "value" (see examples)
      required: false
    interfaces_attributes:
      description:
-        - List of additional interfaces configuration. It must be a list of  
+        - List of additional interfaces configuration. It must be a list of
           of dictionaries as defined in foreman API.
      required: false
 requirements:
@@ -112,8 +112,9 @@ requirements:
 '''
 
 EXAMPLES = '''
-# Creates a new host vm1.example.com in foreman with some parameters, and provide ip address:
-# 
+# Creates a new host vm1.example.com in foreman with some parameters,
+# and provide ip address:
+#
 - foreman_host:
     state: present
     url: https://mysat.example.com
@@ -126,7 +127,7 @@ EXAMPLES = '''
     ip: 192.168.100.3
     hostgroup_name: myhostgroup
     root_pass: "password"
-    host_parameters_attributes: "[{'name': 'parameter', 'value': 'desired_value'}]"
+    host_parameters_attributes: "[{'name': 'parameter', 'value': 'value'}]"
 
 # Create a new host vm1.example.com in foreman with a second NIC interface.
 #
@@ -142,10 +143,11 @@ EXAMPLES = '''
     ip: 192.168.100.3
     hostgroup_name: myhostgroup
     root_pass: "password"
-    interfaces_attributes: "[{'mac': '10:00:00:00:00:00', 'ip': '1.1.1.1', 'type': 'Nic::Managed' }]"
-    
+    interfaces_attributes: "[{'mac': '10:00:00:00:00:00',
+                              'ip': '1.1.1.1', 'type': 'Nic::Managed' }]"
+
 # Deletes a host vm1.example.com in foreman:
-# 
+#
 - foreman_host:
     state: absent
     url: https://mysat.example.com
@@ -155,8 +157,8 @@ EXAMPLES = '''
     location_name: myloc
     name: vm1.example.com
 
-# Creates a host vm1.example.com in foreman using compute resources to create the system
-# in a backend. IP will be assigned by foreman.
+# Creates a host vm1.example.com in foreman using compute resources to create
+# the system in a backend. IP will be assigned by foreman.
 
 - foreman_host:
     state: absent
@@ -166,27 +168,31 @@ EXAMPLES = '''
     organization_name: myorg
     location_name: myloc
     name: vm1.example.com
-    hostgroup_name=myhostgroup 
-    build=true 
+    hostgroup_name=myhostgroup
+    build=true
     compute_resource=RHEV_CLUSTER
     compute_profile=Big
 
 '''
 
+
 def _exit_hostvars(module, host, changed=True, result="success"):
+    name = module.params['name']
     if host is None:
-        hostvars={}
+        hostvars = {}
     else:
-        hostvars={"name": module.params["name"],"id": host["id"], "ip": host["ip"]}
+        hostvars = {"name": name, "id": host["id"], "ip": host["ip"]}
     module.exit_json(
         changed=changed, host=hostvars, result=result)
 
 
 def _delete_host(module, foreman_client):
-    element=get_single_element_from_name('hosts',module.params['name'],module,foreman_client)
-    id=element["id"]
-    ip=element["ip"]
-    host={"name": module.params['name'], "id": id, "ip": ip }
+    name = module.params['name']
+    element = single_element_from_name('hosts', name, module,
+                                           foreman_client)
+    id = element["id"]
+    ip = element["ip"]
+    host = {"name": name, "id": id, "ip": ip}
     try:
         foreman_client.destroy_hosts(id)
     except Exception as e:
@@ -195,53 +201,68 @@ def _delete_host(module, foreman_client):
 
 
 def _create_host(module, foreman_client):
-    hostargs = {} 
-    hostargs['name'] = module.params['name']
-    hostargs['build'] = module.params['build']
-    hostargs['organization_id'] = get_single_id_from_name("organizations",module.params['organization_name'],module,foreman_client)
-    hostargs['location_id'] = get_single_id_from_name("locations",module.params['location_name'],module,foreman_client)
+    params = module.params
+    args = {}
+    args['name'] = params['name']
+    args['build'] = params['build']
+    args['organization_id'] = id_from_name('organizations',
+                                           params['organization_name'],
+                                           module, foreman_client)
+    args['location_id'] = id_from_name('locations', params['location_name'],
+                                       module, foreman_client)
 
-    if module.params['hostgroup_name']:
-        hostargs['mac'] = module.params['mac']
- 
-    if module.params['hostgroup_name']:
-        hostargs['hostgroup_id'] = get_single_id_from_name('hostgroups',module.params['hostgroup_name'],module,foreman_client)
+    if params['hostgroup_name']:
+        args['mac'] = params['mac']
 
-    if module.params['compute_resource']:
-        hostargs['compute_resource_id'] = get_single_id_from_name('computeresources',module.params['compute_resource'],module,foreman_client)
+    if params['hostgroup_name']:
+        args['hostgroup_id'] = id_from_name('hostgroups',
+                                            params['hostgroup_name'],
+                                            module, foreman_client)
 
-    if module.params['compute_profile']:
-        hostargs['compute_profile_id'] = get_single_id_from_name('computeprofiles',module.params['compute_profile'],module,foreman_client)
+    if params['compute_resource']:
+        args['compute_resource_id'] = id_from_name('computeresources',
+                                                   params['compute_resource'],
+                                                   module, foreman_client)
 
-    if module.params['root_pass']:
-        hostargs['root_pass'] = module.params['root_pass']
+    if params['compute_profile']:
+        args['compute_profile_id'] = id_from_name('computeprofiles',
+                                                  params['compute_profile'],
+                                                  module, foreman_client)
 
-    if module.params['ptable_name']:
-        hostargs['ptable_id'] = get_single_id_from_name('ptables',module.params['ptable_name'],module,foreman_client)
+    if params['root_pass']:
+        args['root_pass'] = params['root_pass']
 
-    if module.params['ip']:
-        hostargs['ip'] = module.params['ip']
+    if params['ptable_name']:
+        args['ptable_id'] = id_from_name('ptables',
+                                         params['ptable_name'], module,
+                                         foreman_client)
 
-    if module.params['interfaces_attributes']:
-        hostargs['interfaces_attributes'] = eval(module.params['interfaces_attributes'])
+    if params['ip']:
+        args['ip'] = params['ip']
+
+    if params['interfaces_attributes']:
+        args['interfaces_attributes'] = eval(params['interfaces_attributes'])
 
     try:
-        host = foreman_client.create_hosts(host=hostargs)
+        host = foreman_client.create_hosts(host=args)
     except Exception as e:
-        module.fail_json(msg="Error creating host: %s" % e.message )
+        module.fail_json(msg="Error creating host: %s" % e.message)
 
-    if module.params['host_parameters_attributes']:
-        hostparams = {} 
-        hostparams['host_parameters_attributes'] = eval(module.params['host_parameters_attributes'])
+    if params['host_parameters_attributes']:
+        hostparams = {}
+        hostparams['host_parameters_attributes'] = \
+            eval(params['host_parameters_attributes'])
         try:
-            host =foreman_client.update_hosts(host=hostparams, id=host['id']) 
+            host = foreman_client.update_hosts(host=hostparams, id=host['id'])
         except Exception as e:
             module.fail_json(msg="Error creating host: %s" % e.message)
     _exit_hostvars(module, host)
 
+
 def _get_host_state(module, foreman_client):
     state = module.params['state']
-    host = get_single_element_from_name('hosts',module.params['name'],module,foreman_client)
+    host = single_element_from_name('hosts', module.params['name'],
+                                        module, foreman_client)
     if host and state == 'present':
         _exit_hostvars(module, host, changed=False)
     if host and state == 'absent':
@@ -254,23 +275,23 @@ def _get_host_state(module, foreman_client):
 def main():
 
     argument_spec = dict(
-        state                           = dict(default='present', choices=['absent', 'present']),
-        url                             = dict(required=True),
-        foreman_user                    = dict(required=True),
-        foreman_password                = dict(required=True,no_log=True),
-        build                           = dict(default='false', choices=['true', 'false']),
-        name                            = dict(required=True),
-        ip                              = dict(required=False),
-        mac                             = dict(required=False),
-        organization_name               = dict(required=True),
-        location_name                   = dict(required=True),
-        hostgroup_name                  = dict(required=False),
-        ptable_name                     = dict(required=False),
-        root_pass                       = dict(required=False),
-        host_parameters_attributes      = dict(required=False),
-        interfaces_attributes           = dict(required=False),
-        compute_resource                = dict(required=False),
-        compute_profile                 = dict(required=False),
+        state=dict(default='present', choices=['absent', 'present']),
+        url=dict(required=True),
+        foreman_user=dict(required=True),
+        foreman_password=dict(required=True, no_log=True),
+        build=dict(default='false', choices=['true', 'false']),
+        name=dict(required=True),
+        ip=dict(required=False),
+        mac=dict(required=False),
+        organization_name=dict(required=True),
+        location_name=dict(required=True),
+        hostgroup_name=dict(required=False),
+        ptable_name=dict(required=False),
+        root_pass=dict(required=False),
+        host_parameters_attributes=dict(required=False),
+        interfaces_attributes=dict(required=False),
+        compute_resource=dict(required=False),
+        compute_profile=dict(required=False),
     )
     module = AnsibleModule(argument_spec)
 
@@ -281,7 +302,10 @@ def main():
 
     try:
         host_params = dict(module.params)
-        foreman_client = Foreman(host_params['url'], (host_params['foreman_user'], host_params['foreman_password']), api_version=2)
+        foreman_client = Foreman(host_params['url'],
+                                 (host_params['foreman_user'],
+                                 host_params['foreman_password']),
+                                 api_version=2)
 
         if state == 'present':
             _get_host_state(module, foreman_client)

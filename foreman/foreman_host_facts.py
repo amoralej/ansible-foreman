@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # coding: utf-8 -*-
 
-# Copyright (c) 2016 Red Hat 
+# Copyright (c) 2016 Red Hat
 #
 # This module is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ from ansible.module_utils.basic import *
 from ansible.modules.extras.foreman.foreman_utils import *
 
 try:
-    from foreman.client import Foreman 
+    from foreman.client import Foreman
     HAS_FOREMAN_CLIENT = True
 except ImportError:
     HAS_FOREMAN_CLIENT = False
@@ -32,7 +32,7 @@ DOCUMENTATION = '''
 module: foreman_host_fact
 short_description: Add foreman_host and foreman_status facts for node
 version_added: "2.0"
-author: "Alfredo Moralejo (amoralej@redhat.com)"
+author: "Alfredo Moralejo (amoralej)"
 description:
    - Add foreman_host and foreman_status facts for node
 options:
@@ -59,7 +59,7 @@ requirements:
 
 EXAMPLES = '''
 # Get foreman facts for server vm1.example.com
-# 
+#
 - foreman_host_facts:
     url: https://mysat.example.com
     foreman_user: admin
@@ -70,18 +70,20 @@ EXAMPLES = '''
 
 '''
 
+
 def _get_host_status(module, foreman_client):
-    id = get_single_id_from_name('hosts',module.params['name'],module,foreman_client)
-    status = foreman_client.do_get("/api/hosts/" + str(id) + "/status","")
+    id = id_from_name('hosts', module.params['name'], module, foreman_client)
+    status = foreman_client.do_get("/api/hosts/" + str(id) + "/status", "")
     return status
+
 
 def main():
 
     argument_spec = dict(
-        url                             = dict(required=True),
-        foreman_user                    = dict(required=True),
-        foreman_password                = dict(required=True, no_log=True),
-        name                            = dict(required=True),
+        url=dict(required=True),
+        foreman_user=dict(required=True),
+        foreman_password=dict(required=True, no_log=True),
+        name=dict(required=True),
     )
     module = AnsibleModule(argument_spec)
 
@@ -90,9 +92,13 @@ def main():
 
     try:
         host_params = dict(module.params)
-        foreman_client = Foreman(host_params['url'], (host_params['foreman_user'], host_params['foreman_password']), api_version=2)
-        host=get_single_element_from_name('hosts',module.params['name'],module,foreman_client)
-        status=_get_host_status(module, foreman_client)
+        foreman_client = Foreman(host_params['url'],
+                                 (host_params['foreman_user'],
+                                 host_params['foreman_password']),
+                                 api_version=2)
+        host = single_element_from_name('hosts', module.params['name'],
+                                        module, foreman_client)
+        status = _get_host_status(module, foreman_client)
         module.exit_json(changed=False, ansible_facts=dict(
             foreman_host=host, foreman_status=status))
     except Exception as e:
