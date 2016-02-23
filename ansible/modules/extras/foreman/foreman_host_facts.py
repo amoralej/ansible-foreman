@@ -17,9 +17,6 @@
 # along with this software.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from ansible.module_utils.basic import *
-from ansible.modules.extras.foreman.foreman_utils import *
-
 try:
     from foreman.client import Foreman
     HAS_FOREMAN_CLIENT = True
@@ -105,5 +102,7 @@ def main():
         module.fail_json(msg=e.message)
 
 
+from ansible.module_utils.basic import *
+from ansible.module_utils.foreman_utils import *
 if __name__ == '__main__':
     main()

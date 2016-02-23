@@ -112,6 +112,6 @@ def main():
         module.fail_json(msg=e.message)
 
 from ansible.module_utils.basic import *
-from ansible.modules.extras.foreman.foreman_utils import *
+from ansible.module_utils.foreman_utils import *
 if __name__ == '__main__':
     main()
