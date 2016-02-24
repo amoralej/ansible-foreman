@@ -5,7 +5,7 @@
 Copy the content of ansible directory in your ansible installation:
 
 ```
-cp -pr ansible "$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())""
+cp -pr ansible "$(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")"
 ```
 
 ### Using it
@@ -20,4 +20,6 @@ Options of each module are docummented using ansible-doc, try ansible-doc <modul
 
 ### TODO
 
+- Update params and hostgroup (as workaround, host can be deleted / created)
+- Change strings concatenation to printf format
 

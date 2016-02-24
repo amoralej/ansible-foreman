@@ -87,6 +87,10 @@ options:
      description:
         - The password of root user applied in kickstarting
      required: false
+   network:
+     description:
+        - The direction of the subnet to assign as primary.
+     required: false
    compute_resource:
      description:
         - The compute resource name used to deploy the host
@@ -243,6 +247,10 @@ def _create_host(module, foreman_client):
     if params['interfaces_attributes']:
         args['interfaces_attributes'] = eval(params['interfaces_attributes'])
 
+    if params['network']:
+        args['subnet_id'] = subnet_from_network(params['network'],
+                                                module, foreman_client)
+
     try:
         host = foreman_client.create_hosts(host=args)
     except Exception as e:
@@ -292,6 +300,7 @@ def main():
         interfaces_attributes=dict(required=False),
         compute_resource=dict(required=False),
         compute_profile=dict(required=False),
+        network=dict(required=False),
     )
     module = AnsibleModule(argument_spec)
 

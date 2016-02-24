@@ -58,6 +58,20 @@ def id_from_name(resource, name, module, foreman_client):
     else:
         return element['id']
 
+def subnet_from_network(network, module, foreman_client):
+    results = []
+    try:
+        index = 'index_subnets'
+        search = 'network=' + '"' + network + '"'
+        results = getattr(foreman_client, index)(search=search)['results']
+    except Exception as e:
+        msg = 'Error getting ' + network + ' in networks: ' + e.message
+        module.fail_json(msg=msg)
+    if len(results) > 0:
+        return results[0]['id']
+    else:
+        raise ForemanNotFoundElement("Network " + network + " not found")
+
 
 class ForemanNotFoundElement(Exception):
     pass
