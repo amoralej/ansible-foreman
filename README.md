@@ -22,4 +22,5 @@ Options of each module are docummented using ansible-doc, try ansible-doc <modul
 
 - Update params and hostgroup (as workaround, host can be deleted / created)
 - Change strings concatenation to printf format
-
+- Currently modules can be included in roles library folder but it requires de foreman_utils.py in global module_utils. It's not a perfect solution.
+- Install script
